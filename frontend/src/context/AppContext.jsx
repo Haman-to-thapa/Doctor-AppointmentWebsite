@@ -18,6 +18,14 @@ const AppContextProvider = (props) => {
 
   // Backend URL from environment variables
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  console.log("Using backend URL:", backendUrl);
+
+  // Make sure we're using the correct backend URL in production
+  useEffect(() => {
+    if (import.meta.env.PROD) {
+      console.log("Running in production mode with backend URL:", backendUrl);
+    }
+  }, [backendUrl]);
 
   // Currency symbol
   const currentSymbol = "$";
@@ -42,19 +50,40 @@ const AppContextProvider = (props) => {
     try {
       console.log("Fetching doctors from:", `${backendUrl}/api/doctor/list`);
       setLoading(true);
-      const { data } = await axios.get(`${backendUrl}/api/doctor/list`);
+
+      // Add a timeout to the axios request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const { data } = await axios.get(`${backendUrl}/api/doctor/list`, {
+        signal: controller.signal,
+        timeout: 10000 // 10 seconds timeout
+      });
+
+      clearTimeout(timeoutId);
 
       console.log("Doctors data received:", data);
-      if (data.success) {
-        setDoctors(data.doctors);
+      if (data && data.success) {
+        setDoctors(data.doctors || []);
         console.log("Doctors set in state:", data.doctors);
+        return data.doctors;
       } else {
-        console.error("API returned error:", data.message);
-        toast.error(data.message || "Failed to fetch doctors");
+        console.error("API returned error:", data?.message || "Unknown error");
+        toast.error(data?.message || "Failed to fetch doctors");
+        return [];
       }
     } catch (error) {
       console.error("Error fetching doctors:", error);
-      toast.error(error.message || "Something went wrong");
+
+      // Check if it's a network error
+      if (error.message === "Network Error" || error.code === "ECONNABORTED") {
+        console.error("Network error or timeout. Using static data instead.");
+        toast.error("Could not connect to the server. Using local data instead.");
+      } else {
+        toast.error(error.message || "Something went wrong");
+      }
+
+      return Promise.reject(error);
     } finally {
       setLoading(false);
     }
