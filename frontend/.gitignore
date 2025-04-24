@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist (uncommented to include dist directory for Render deployment)
 dist-ssr
 # *.local
 # Uncomment the line below if you want to include .env files in your repository
