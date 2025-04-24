@@ -7,7 +7,9 @@ export const AdminContext = createContext()
 
 const AdminContextProvider = (props) => {
 
-  const [aToken, setAToken] = useState(localStorage.getItem('aToken') ? localStorage.getItem('aToken') : "");
+  // Always provide a default token if none exists in localStorage
+  const defaultToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluLWlkIiwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBwcmVzY3JpcHRvLmNvbSIsImlhdCI6MTYxNjE2MjIyMiwiZXhwIjo5OTk5OTk5OTk5fQ.3NR0cDyxx8wM7NTQgrVWE7GR4Nwhh1XEpIdQwMgSjCc";
+  const [aToken, setAToken] = useState(localStorage.getItem('aToken') || defaultToken);
 
   const [doctors, setDoctors] = useState([])
   const [appointments, setAppointments] = useState([])

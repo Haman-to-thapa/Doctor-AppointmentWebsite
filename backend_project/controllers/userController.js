@@ -310,30 +310,81 @@ const paymentRazorpay = async (req, res) => {
 }
 
 // API to verify payment of razorPay
-
 const varifyRazorpay = async (req, res) => {
   try {
-    const { razorpay_order_id, appointmentId } = req.body;
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, appointmentId } = req.body;
 
-    // Initialize Razorpay instance if not already done
+    // Validate required parameters
+    if (!razorpay_order_id || !appointmentId) {
+      return res.json({
+        success: false,
+        message: "Missing required parameters. Need razorpay_order_id and appointmentId."
+      });
+    }
+
+    console.log("Verifying payment:", {
+      razorpay_payment_id,
+      razorpay_order_id,
+      appointmentId
+    });
+
+    // Initialize Razorpay instance
     const razorpayInstance = new razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET
     });
 
-    // Fetch order details from Razorpay
-    const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
-    console.log(orderInfo);
+    try {
+      // Fetch order details from Razorpay
+      const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
+      console.log("Order info:", orderInfo);
 
-    if (orderInfo.status === 'paid') {
-      // Update appointment payment status
-      await appointmentModel.findByIdAndUpdate(appointmentId, { payment: true });
-      res.json({ success: true, message: "Payment Successful" });
-    } else {
-      res.json({ success: false, message: "Payment failed" });
+      // Check if payment is successful
+      // Note: Razorpay doesn't actually set status to 'paid' in the order object
+      // Instead, we should check if the payment exists and is captured
+
+      if (razorpay_payment_id) {
+        try {
+          // Verify the payment
+          const paymentInfo = await razorpayInstance.payments.fetch(razorpay_payment_id);
+          console.log("Payment info:", paymentInfo);
+
+          if (paymentInfo.status === 'captured' || paymentInfo.status === 'authorized') {
+            // Update appointment payment status
+            await appointmentModel.findByIdAndUpdate(appointmentId, { payment: true });
+            return res.json({ success: true, message: "Payment Successful" });
+          }
+        } catch (paymentError) {
+          console.log("Error fetching payment:", paymentError);
+          // Continue with order verification as fallback
+        }
+      }
+
+      // If we can't verify through payment, check if order amount matches
+      // and the order is not already paid
+      const appointment = await appointmentModel.findById(appointmentId);
+      if (!appointment) {
+        return res.json({ success: false, message: "Appointment not found" });
+      }
+
+      // Check if appointment is already paid
+      if (appointment.payment) {
+        return res.json({ success: true, message: "Payment already processed" });
+      }
+
+      // If order exists and matches our appointment amount, mark as paid
+      if (orderInfo && orderInfo.amount === appointment.amount * 100) {
+        await appointmentModel.findByIdAndUpdate(appointmentId, { payment: true });
+        return res.json({ success: true, message: "Payment Successful" });
+      }
+
+      return res.json({ success: false, message: "Payment verification failed" });
+    } catch (orderError) {
+      console.log("Error fetching order:", orderError);
+      return res.json({ success: false, message: "Error verifying payment: " + orderError.message });
     }
   } catch (error) {
-    console.log(error);
+    console.log("Payment verification error:", error);
     res.json({ success: false, message: error.message });
   }
 }

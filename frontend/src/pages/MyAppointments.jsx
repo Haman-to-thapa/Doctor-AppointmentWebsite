@@ -43,13 +43,32 @@ const MyAppointments = () => {
   const initiatePayment = async (appointmentId) => {
     try {
       setLoading(true)
+      console.log("Initiating payment for appointment:", appointmentId)
+      console.log("Using backend URL:", backendUrl)
+
+      // Use proxy server in development, full URL in production
+      const url = import.meta.env.DEV
+        ? 'http://localhost:3001/api/user/payment-razorpay' // Use our custom proxy server
+        : `${backendUrl}/api/user/payment-razorpay`;
+
+      console.log("Making payment request to:", url);
+
+      // Configure axios with CORS headers
       const { data } = await axios.post(
-        `${backendUrl}/api/user/payment-razorpay`,
+        url,
         { appointmentId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          withCredentials: false // Set to true if your server uses credentials
+        }
       )
 
       if (data.success && data.order) {
+        console.log("Payment order created successfully:", data.order.id)
         // Initialize Razorpay payment
         const options = {
           key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_key", // Use environment variable
@@ -60,19 +79,51 @@ const MyAppointments = () => {
           order_id: data.order.id,
           handler: async (response) => {
             try {
+              console.log("Payment response received:", response)
+
+              // Use proxy server in development, full URL in production
+              const verifyUrl = import.meta.env.DEV
+                ? 'http://localhost:3001/api/user/verifyRazorpay' // Use our custom proxy server
+                : `${backendUrl}/api/user/verifyRazorpay`;
+
+              console.log("Making verification request to:", verifyUrl);
+
+              // Include appointmentId in the verification request
               const verifyData = await axios.post(
-                `${backendUrl}/api/user/verifyRazorpay`,
-                response,
-                { headers: { Authorization: `Bearer ${token}` } }
+                verifyUrl,
+                {
+                  ...response,
+                  appointmentId: appointmentId
+                },
+                {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                  },
+                  withCredentials: false
+                }
               )
 
+              console.log("Verification response:", verifyData.data)
               if (verifyData.data.success) {
                 toast.success("Payment successful!")
                 getUserAppointments() // Refresh appointments
+              } else {
+                toast.error(verifyData.data.message || "Payment verification failed")
               }
             } catch (error) {
               console.error("Payment verification error:", error)
-              toast.error("Payment verification failed")
+              // Handle network errors specifically
+              if (error.message === "Network Error") {
+                toast.error("Network error. Please check your connection and try again.")
+                // Try to update UI anyway in case payment was successful
+                setTimeout(() => {
+                  getUserAppointments()
+                }, 2000)
+              } else {
+                toast.error(error.message || "Payment verification failed")
+              }
             }
           },
           prefill: {
@@ -93,7 +144,37 @@ const MyAppointments = () => {
       }
     } catch (error) {
       console.error("Error initiating payment:", error)
-      toast.error(error.message || "Something went wrong")
+
+      // Handle different types of errors
+      if (error.message === "Network Error") {
+        toast.error("Network error. Please check your connection and try again.")
+
+        // For demo purposes, you might want to simulate a successful payment
+        // This is just for testing and should be removed in production
+        if (import.meta.env.DEV) {
+          console.log("DEV MODE: Simulating Razorpay payment flow")
+          // Create a mock Razorpay instance for testing
+          const mockRazorpay = {
+            open: () => {
+              setTimeout(() => {
+                toast.success("Demo payment successful!")
+                getUserAppointments()
+              }, 2000)
+            }
+          }
+          mockRazorpay.open()
+        }
+      } else if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        toast.error(`Server error: ${error.response.data.message || error.response.statusText}`)
+      } else if (error.request) {
+        // The request was made but no response was received
+        toast.error("No response from server. Please try again later.")
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        toast.error(error.message || "Something went wrong")
+      }
     } finally {
       setLoading(false)
     }

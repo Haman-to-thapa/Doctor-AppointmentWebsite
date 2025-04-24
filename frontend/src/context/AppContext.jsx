@@ -18,8 +18,12 @@ const AppContextProvider = (props) => {
   const [appointments, setAppointments] = useState([]);
 
   // Backend URL from environment variables
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-  console.log("Using backend URL:", backendUrl);
+  // In development, use relative URLs for API requests to work with the Vite proxy
+  // In production, use the full URL from environment variables
+  const backendUrl = import.meta.env.DEV
+    ? '' // Empty string for relative URLs that will work with the proxy
+    : (import.meta.env.VITE_BACKEND_URL || "https://doctor-appointment-website-0kx3.onrender.com");
+  console.log("Using backend URL:", backendUrl || "relative URLs with proxy");
 
   // Check if we should use the test endpoint
   const useTestEndpoint = import.meta.env.VITE_USE_TEST_ENDPOINT === "true";

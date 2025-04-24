@@ -21,27 +21,72 @@ dotenv.config();
 // middlewares
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
-// Configure CORS for development and production
+// Configure CORS to allow all origins for simplicity
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? [
-        process.env.FRONTEND_URL || 'https://your-frontend-domain.onrender.com',
-        process.env.ADMIN_URL || 'https://your-admin-domain.onrender.com'
-      ]
-    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:5177'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if(!origin) return callback(null, true);
+
+    // Allow all origins for now to fix CORS issues
+    return callback(null, true);
+
+    /* Uncomment this for more restrictive CORS policy in production
+    const allowedOrigins = [
+      'https://doctor-appointment-frontend-48je.onrender.com',
+      'https://doctor-appointment-website-0kx3.onrender.com',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'http://localhost:5176',
+      'http://localhost:5177'
+    ];
+
+    if(allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+    */
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200 // For legacy browser support
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Confirm-Delete'],
+  optionsSuccessStatus: 200, // For legacy browser support
+  preflightContinue: false,
+  maxAge: 86400 // Preflight results are cached for 24 hours
 };
 
 app.use(cors(corsOptions))
 
+// Add a specific CORS handler for payment routes to ensure preflight requests are handled correctly
+app.options('/api/user/payment-razorpay', cors(corsOptions));
+app.options('/api/user/verifyRazorpay', cors(corsOptions));
+
+// Add a middleware to ensure CORS headers are set for all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+
+  // Handle OPTIONS method
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  next();
+});
+
+// Add a middleware to log all requests for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // api endpoints
-app.use('/api/admin',adminRouter)
-app.use('/api/doctor',doctorRouter)
-app.use('/api/user',userRouter)
+app.use('/api/admin', adminRouter)
+app.use('/api/doctor', doctorRouter)
+app.use('/api/user', userRouter)
 
 //localhost:4000;api/admin/add-doctor
 
