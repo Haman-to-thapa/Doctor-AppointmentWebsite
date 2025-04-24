@@ -1,0 +1,68 @@
+services:
+  # Backend API service
+  - type: web
+    name: doctor-appointment-api
+    env: node
+    buildCommand: cd backend_project && npm install && npm run build
+    startCommand: cd backend_project && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_SECRET_KEY
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@prescripto.com
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: CURRENCY
+        value: INR
+      - key: FRONTEND_URL
+        fromService:
+          name: doctor-appointment-frontend
+          type: web
+          property: url
+      - key: ADMIN_URL
+        fromService:
+          name: doctor-appointment-admin
+          type: web
+          property: url
+
+  # Frontend service
+  - type: web
+    name: doctor-appointment-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        fromService:
+          name: doctor-appointment-api
+          type: web
+          property: url
+      - key: VITE_RAZORPAY_KEY_ID
+        sync: false
+
+  # Admin Panel service
+  - type: web
+    name: doctor-appointment-admin
+    env: static
+    buildCommand: cd admin && npm install && npm run build
+    staticPublishPath: ./admin/dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        fromService:
+          name: doctor-appointment-api
+          type: web
+          property: url
