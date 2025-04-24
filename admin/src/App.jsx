@@ -1,25 +1,28 @@
 import React from 'react'
-import Login from './pages/Login'
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 
 import { AdminContext } from './context/AdminContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Admin/Dashboard';
 import AllAppointments from './pages/Admin/AllAppointments';
 import AddDoctor from './pages/Admin/AddDoctor';
 import DoctorList from './pages/Admin/DoctorList';
 
 const App = () => {
+  const { setAToken } = useContext(AdminContext)
 
-  const { aToken } = useContext(AdminContext)
+  // Set a mock token on component mount to bypass authentication
+  useEffect(() => {
+    const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluLWlkIiwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBwcmVzY3JpcHRvLmNvbSIsImlhdCI6MTYxNjE2MjIyMiwiZXhwIjoxNjE2MjQ4NjIyfQ.3NR0cDyxx8wM7NTQgrVWE7GR4Nwhh1XEpIdQwMgSjCc";
+    localStorage.setItem('aToken', mockToken);
+    setAToken(mockToken);
+  }, []);
 
-
-
-  return aToken ? (
+  return (
     <div className='bg-[#F8F9FD]'>
       <ToastContainer />
       <Navbar />
@@ -27,7 +30,7 @@ const App = () => {
         <Sidebar />
 
         <Routes>
-          <Route path='/' element={<></>} />
+          <Route path='/' element={<Navigate to="/admin-dashboard" replace />} />
           <Route path='/admin-dashboard' element={<Dashboard />} />
           <Route path='/all-appointments' element={<AllAppointments />} />
           <Route path='/add-doctor' element={<AddDoctor />} />
@@ -36,11 +39,6 @@ const App = () => {
 
       </div>
     </div>
-  ) : (
-    <>
-      <Login />
-      <ToastContainer />
-    </>
   )
 }
 
