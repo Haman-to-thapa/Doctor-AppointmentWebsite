@@ -10,7 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
+# *.local
+# Uncomment the line below if you want to include .env files in your repository
+# .env
 
 # Editor directories and files
 .vscode/*
