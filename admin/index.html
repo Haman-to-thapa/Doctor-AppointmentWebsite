@@ -11,10 +11,28 @@
       const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluLWlkIiwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBwcmVzY3JpcHRvLmNvbSIsImlhdCI6MTYxNjE2MjIyMiwiZXhwIjo5OTk5OTk5OTk5fQ.3NR0cDyxx8wM7NTQgrVWE7GR4Nwhh1XEpIdQwMgSjCc";
       localStorage.setItem('aToken', mockToken);
 
-      // Redirect to dashboard if on login page
-      if (window.location.pathname === '/login') {
+      // Aggressive redirect - check if we're on the login page or root
+      const path = window.location.pathname;
+      if (path === '/login' || path === '/' || path === '') {
         window.location.href = '/admin-dashboard';
       }
+
+      // Also check if the URL contains "login" anywhere
+      if (window.location.href.includes('login')) {
+        window.location.href = '/admin-dashboard';
+      }
+
+      // Override the original Login component if it exists
+      window.addEventListener('DOMContentLoaded', function() {
+        // Set token again to be sure
+        localStorage.setItem('aToken', mockToken);
+
+        // If we're still on a login page somehow, redirect
+        if (document.title.toLowerCase().includes('login') ||
+            document.body.innerHTML.toLowerCase().includes('login form')) {
+          window.location.href = '/admin-dashboard';
+        }
+      });
     </script>
   </head>
   <body>

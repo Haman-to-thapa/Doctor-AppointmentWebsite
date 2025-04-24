@@ -11,6 +11,7 @@ import Dashboard from './pages/Admin/Dashboard';
 import AllAppointments from './pages/Admin/AllAppointments';
 import AddDoctor from './pages/Admin/AddDoctor';
 import DoctorList from './pages/Admin/DoctorList';
+import LoginRedirect from './pages/LoginRedirect';
 
 const App = () => {
   const { setAToken } = useContext(AdminContext)
@@ -45,8 +46,8 @@ const App = () => {
           <Route path='/all-appointments' element={<AllAppointments />} />
           <Route path='/add-doctor' element={<AddDoctor />} />
           <Route path='/doctor-list' element={<DoctorList />} />
-          {/* Explicitly redirect login to dashboard */}
-          <Route path='/login' element={<Navigate to="/admin-dashboard" replace />} />
+          {/* Use LoginRedirect component for the login route */}
+          <Route path='/login' element={<LoginRedirect />} />
         </Routes>
       </div>
     </div>
