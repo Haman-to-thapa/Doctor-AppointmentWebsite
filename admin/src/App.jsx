@@ -29,6 +29,7 @@ const App = () => {
     });
   }, []);
 
+  // Always render the admin dashboard, never show a login page
   return (
     <div className='bg-[#F8F9FD]'>
       <ToastContainer />
@@ -37,13 +38,16 @@ const App = () => {
         <Sidebar />
 
         <Routes>
+          {/* Redirect all unknown routes to the dashboard */}
+          <Route path='*' element={<Navigate to="/admin-dashboard" replace />} />
           <Route path='/' element={<Navigate to="/admin-dashboard" replace />} />
           <Route path='/admin-dashboard' element={<Dashboard />} />
           <Route path='/all-appointments' element={<AllAppointments />} />
           <Route path='/add-doctor' element={<AddDoctor />} />
           <Route path='/doctor-list' element={<DoctorList />} />
+          {/* Explicitly redirect login to dashboard */}
+          <Route path='/login' element={<Navigate to="/admin-dashboard" replace />} />
         </Routes>
-
       </div>
     </div>
   )
