@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: doctor-appointment-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://doctor-appointment-frontend.onrender.com
+      - key: ADMIN_URL
+        value: https://doctor-appointment-admin.onrender.com

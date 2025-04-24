@@ -12,28 +12,55 @@ const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
+  const [loading, setLoading] = useState(false);
+
   const handleOnChange = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setLoading(true);
 
     try {
       if (state === "Admin") {
-        const { data } = await axios.post(backendUrl + '/api/admin/login', { email, password })
+        console.log("Attempting admin login with email:", email);
+        console.log("Using backend URL:", backendUrl);
 
-        if (data.success) {
-          localStorage.setItem('aToken', data.token)
-          setAToken(data.token)
+        const { data } = await axios.post(
+          backendUrl + '/api/admin/login',
+          { email, password },
+          { timeout: 10000 } // 10 second timeout
+        );
+
+        console.log("Login response:", data);
+
+        if (data && data.success) {
+          toast.success("Login successful!");
+          localStorage.setItem('aToken', data.token);
+          setAToken(data.token);
         } else {
-          toast.error(data.message)
+          console.error("Login failed:", data?.message || "Unknown error");
+          toast.error(data?.message || "Login failed. Please check your credentials.");
         }
-
-      } else {
-
+      } else if (state === "Doctor") {
+        toast.info("Doctor login is not implemented yet.");
       }
-
-
-
     } catch (error) {
+      console.error("Login error:", error);
 
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("Response error:", error.response.data);
+        toast.error(error.response.data?.message || "Login failed. Please check your credentials.");
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("Request error:", error.request);
+        toast.error("No response from server. Please check your connection.");
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error("Error:", error.message);
+        toast.error(error.message || "An error occurred during login.");
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -62,7 +89,13 @@ const Login = () => {
             className='border border-[#DADADA] rounded w-full p-2 mt-1' />
         </div>
 
-        <button className='bg-primary items-center w-full p-2 rounded-full text-white'>Login</button>
+        <button
+          type="submit"
+          disabled={loading}
+          className={`bg-primary items-center w-full p-2 rounded-full text-white flex justify-center ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+        >
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
 
         {
           state === "Admin"

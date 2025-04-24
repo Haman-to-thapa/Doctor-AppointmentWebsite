@@ -11,13 +11,17 @@ const TopDoctors = () => {
 
   // Set up display doctors based on API or static data
   useEffect(() => {
+    // Always set static doctors first for immediate display
+    console.log("Setting static doctors data for immediate display");
+    setDisplayDoctors(staticDoctors);
+
+    // Then update with API data if available
     if (doctors && doctors.length > 0) {
       console.log("Using API doctors data:", doctors.length, "doctors");
       setDisplayDoctors(doctors);
       setApiError(false);
     } else if (!loading && doctors.length === 0) {
       console.log("No API doctors data, using static data");
-      setDisplayDoctors(staticDoctors);
       setApiError(true);
     }
   }, [doctors, loading]);
